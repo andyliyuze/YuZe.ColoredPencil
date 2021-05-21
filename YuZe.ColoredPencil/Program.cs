@@ -8,7 +8,8 @@ namespace YuZe.ColoredPencil
     {
         public static void Main(string[] args)
         {
-            BitmapHelper.Splt(new System.Drawing.Bitmap(@"G:\BaiduNetdiskDownload\P10424-172645.jpg"));
+            BitmapHelper.Splt(new System.Drawing.Bitmap(@"sky.jpg"));
+           // BitmapHelper.PaintLine()
             CreateHostBuilder(args).Build().Run();
         }
 

@@ -9,6 +9,23 @@ namespace YuZe.ColoredPencil.Helper
 {
     public static class BitmapHelper
     {
+        public static List<Color> MyColors = new List<Color>();
+
+        public static string[] Colors = {
+
+            "#ffffff","#fffcd1","#fff3c1","#fde1b9","#fbe2c4","#fff000","#ffe001","#dcc400","#d8ad00","#f8b713","#f49d36","#ef8200",
+
+            "#f29c8f","#e7340b","#e70044","#e6012c","#d9082f","#d70b17","#e70020","#c80815","#ac3e03","#ac3e03","#922a11","#9f141b",
+
+            "#f7c8dc","#ed86b5","#ea5098","#b64a96","#a44998","#b50081","#8f0171","#b879b0","#a674af","#9a7bb6","#7c4799","#541b86",
+
+            "#b8e2f8","#86cabf","#61c1b5","#01afec","#019fe9","#0168b7","#0081ab","#004ea1","#003585","#063190","#352f8f","#234455",
+
+            "#dadf00","#abcd05","#90c320","#91a100","#798602","#3eb034","#12a83a","#009946","#008e44","#007445","#006835","#00522e",
+
+            "#c8c8c8","#b6b6b6","#b9bdbc","#707070","#617985","#3f3939","#c99d3a","#b37400","#a85102","#6a2c05","#411401","#221715",
+        };
+
         /// <summary>
         /// 越接近白色值约接近0
         /// 越接近黑色值约接近255
@@ -46,7 +63,7 @@ namespace YuZe.ColoredPencil.Helper
         /// <returns></returns>
         public static (List<Color> imgRGB, List<Color> clost) GetRBG(Bitmap img)
         {
-            var systems = GetSystemColors();
+            var systems = GetMyColors();
             var clost = new List<Color>();
 
             var rgbs = new List<Color>();
@@ -64,6 +81,10 @@ namespace YuZe.ColoredPencil.Helper
                     double minDis = 999;
                     foreach (var thisColor in systems)
                     {
+                        if (thisColor.Name == "#ff01afec") 
+                        {
+                        
+                        }
                         var dis = DistanceOf(pixel.RGB2HSV(), thisColor.RGB2HSV());
                         if (dis < minDis)
                         {
@@ -75,13 +96,7 @@ namespace YuZe.ColoredPencil.Helper
                     if (minDis < 3)
                     {
 
-                    }
-                    if (minColor.Name == "DarkSlateGray")
-                    {
-                        var min = FindColorMin(pixel, systems);
-                        var max = FindColorMax(pixel, systems);
-                        var mix = Color.FromArgb((min.R + max.R) / 2, (min.G + max.G) / 2, (min.B + max.B) / 2);
-                    }
+                    } 
                     if (rgbs.Any(a => a == pixel))
                     {
                         continue;
@@ -114,13 +129,15 @@ namespace YuZe.ColoredPencil.Helper
 
         public static void Splt(Bitmap img)
         {
+            var index = 1;
             var w = 100;
+            var h = w;
             for (int i = 0; i < img.Width; i += w)
             {
-                for (int j = 0; j < img.Height; j += w)
+                for (int j = 0; j < img.Height; j += h)
                 {
-                    var height = w;
-                    if (j + w > img.Height)
+                    var height = h;
+                    if (j + h > img.Height)
                     {
                         height = img.Height - j;
                     }
@@ -130,20 +147,18 @@ namespace YuZe.ColoredPencil.Helper
                         width = img.Width - i;
                     }
                     var copyBitmap = img.Clone(new Rectangle(i, j, width, height), PixelFormat.Undefined);
-                    string dic = "spilt3/spilt" + i + "_" + j;
+
+                    string dic = "spilt5/spilt_" + index;
                     if (!Directory.Exists(dic))
                     {
                         Directory.CreateDirectory(dic);
                     }
-                    if (dic == "spilt3/spilt400_2500")
+                    if (index == 91) 
                     {
-
+                    
                     }
                     var clost = GetRBG(copyBitmap);
-                    if (clost.clost.Count != clost.imgRGB.Count)
-                    {
 
-                    }
                     var bit = new Bitmap(100, 100, PixelFormat.Format24bppRgb);
                     var g = Graphics.FromImage(bit);
 
@@ -159,6 +174,8 @@ namespace YuZe.ColoredPencil.Helper
 
                     string filename = dic + "/" + "image_" + i + "_" + j + ".jpeg";
                     copyBitmap.Save(Path.Combine(filename), ImageFormat.Jpeg);
+
+                    index++;
                 }
             }
         }
@@ -206,7 +223,7 @@ namespace YuZe.ColoredPencil.Helper
         {
             var select = colors.Where(a => a.R >= color1.R && a.G >= color1.G && a.B >= color1.B && a != color1).ToList();
             var minR = select.Min(a => a.R);
-            
+
             double mindis = 999;
             var mincolor = Color.Empty;
             //mincolor = select.FirstOrDefault(a => a.R == minR);
@@ -240,6 +257,62 @@ namespace YuZe.ColoredPencil.Helper
             }
             return systems;
         }
+
+        public static List<Color> GetMyColors()
+        {
+            if (MyColors.Any()) 
+            {
+                return MyColors;
+            }
+            var systems = new List<Color>();
+             
+            foreach (var item in Colors)
+            { 
+                var thisColor = ColorTranslator.FromHtml(item);
+                systems.Add(thisColor);
+            }
+            MyColors = systems;
+            return systems;
+        }
+
+        public static void PaintLine(Bitmap bit)
+        {
+            var w = 100;
+            var paintWidth = 0;
+            var paintHeight = 0;
+            var g = Graphics.FromImage(bit);
+            //创建黑色pen对象
+            var pen = new Pen(Color.FromArgb(158, 158, 158), 2f);
+            while (paintWidth + 100 <= bit.Width)
+            {
+                paintWidth += w;
+                var p1 = new Point(paintWidth, 0);
+                var p2 = new Point(paintWidth, bit.Height);
+                g.DrawLine(pen, p1, p2);
+
+            }
+            while (paintHeight + 100 <= bit.Height)
+            {
+                paintHeight += w;
+                var p1 = new Point(0, paintHeight);
+                var p2 = new Point(bit.Width, paintHeight);
+                g.DrawLine(pen, p1, p2);
+            }
+            var index = 1;
+            for (int i = 0; i < bit.Width; i += w)
+            {
+                for (int j = 0; j < bit.Height; j += w)
+                {
+                    g.DrawString(index.ToString(), new Font("微软雅黑", 12), new SolidBrush(Color.White), i, j);
+                    index++;
+                }
+            }
+
+            bit.Save(Path.Combine("line.jpeg"), ImageFormat.Jpeg);
+        }
+
+        //获取笔盒颜色
+        //让用户自己输入每行有几个格子，然后程序除格子数，得到单位长度，然后高度也是按照该长度
     }
 
 

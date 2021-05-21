@@ -1,8 +1,27 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="spilt2\**" />
+    <Compile Remove="spilt3\**" />
+    <Compile Remove="spilt4\**" />
+    <Compile Remove="spilt\**" />
+    <Content Remove="spilt2\**" />
+    <Content Remove="spilt3\**" />
+    <Content Remove="spilt4\**" />
+    <Content Remove="spilt\**" />
+    <EmbeddedResource Remove="spilt2\**" />
+    <EmbeddedResource Remove="spilt3\**" />
+    <EmbeddedResource Remove="spilt4\**" />
+    <EmbeddedResource Remove="spilt\**" />
+    <None Remove="spilt2\**" />
+    <None Remove="spilt3\**" />
+    <None Remove="spilt4\**" />
+    <None Remove="spilt\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
