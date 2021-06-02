@@ -1,9 +1,12 @@
-﻿using System;
+﻿using SixLabors.ImageSharp.Advanced;
+using SixLabors.ImageSharp.PixelFormats;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace YuZe.ColoredPencil.Helper
 {
@@ -81,9 +84,9 @@ namespace YuZe.ColoredPencil.Helper
                     double minDis = 999;
                     foreach (var thisColor in systems)
                     {
-                        if (thisColor.Name == "#ff01afec") 
+                        if (thisColor.Name == "#ff01afec")
                         {
-                        
+
                         }
                         var dis = DistanceOf(pixel.RGB2HSV(), thisColor.RGB2HSV());
                         if (dis < minDis)
@@ -96,7 +99,7 @@ namespace YuZe.ColoredPencil.Helper
                     if (minDis < 3)
                     {
 
-                    } 
+                    }
                     if (rgbs.Any(a => a == pixel))
                     {
                         continue;
@@ -148,21 +151,18 @@ namespace YuZe.ColoredPencil.Helper
                     }
                     var copyBitmap = img.Clone(new Rectangle(i, j, width, height), PixelFormat.Undefined);
 
-                    string dic = "spilt5/spilt_" + index;
+                    string dic = "spilt_2/spilt_" + index;
                     if (!Directory.Exists(dic))
                     {
                         Directory.CreateDirectory(dic);
                     }
-                    if (index == 91) 
-                    {
-                    
-                    }
+
                     var clost = GetRBG(copyBitmap);
 
                     var bit = new Bitmap(100, 100, PixelFormat.Format24bppRgb);
                     var g = Graphics.FromImage(bit);
 
-                    foreach (var item in clost.clost)
+                    foreach (var item in clost.imgRGB)
                     {
                         var color = item;
                         g.FillRectangle(new SolidBrush(color), new Rectangle(0, 0, 100, 100));//这句实现填充矩形的功能
@@ -260,14 +260,14 @@ namespace YuZe.ColoredPencil.Helper
 
         public static List<Color> GetMyColors()
         {
-            if (MyColors.Any()) 
+            if (MyColors.Any())
             {
                 return MyColors;
             }
             var systems = new List<Color>();
-             
+
             foreach (var item in Colors)
-            { 
+            {
                 var thisColor = ColorTranslator.FromHtml(item);
                 systems.Add(thisColor);
             }
@@ -313,74 +313,292 @@ namespace YuZe.ColoredPencil.Helper
 
         //获取笔盒颜色
         //让用户自己输入每行有几个格子，然后程序除格子数，得到单位长度，然后高度也是按照该长度
-    }
 
-
-    public static class ColorExtension
-    {
-        public static HSV RGB2HSV(this Color color)
+        /// <summary>
+        /// 图像灰度化
+        /// </summary>
+        /// <param name="bmp"></param>
+        /// <returns></returns>
+        public static Bitmap ToGray(Bitmap bmp)
         {
-            return RGB2HSV(color.R, color.G, color.B);
-        }
-        /// RGB转换HSV
-        private static HSV RGB2HSV(int red, int green, int blue)
-        {
-            double r = ((double)red / 255.0);
-            double g = ((double)green / 255.0);
-            double b = ((double)blue / 255.0);
-
-            double max = Math.Max(r, Math.Max(g, b));
-            double min = Math.Min(r, Math.Min(g, b));
-
-            var hue = 0.0;
-            if (max == r && g >= b)
+            for (int i = 0; i < bmp.Width; i++)
             {
-                if (max - min == 0) hue = 0.0;
-                else hue = 60 * (g - b) / (max - min);
-            }
-            else if (max == r && g < b)
-            {
-                hue = 60 * (g - b) / (max - min) + 360;
-            }
-            else if (max == g)
-            {
-                hue = 60 * (b - r) / (max - min) + 120;
-            }
-            else if (max == b)
-            {
-                hue = 60 * (r - g) / (max - min) + 240;
+                for (int j = 0; j < bmp.Height; j++)
+                {
+                    //获取该点的像素的RGB的颜色
+                    Color color = bmp.GetPixel(i, j);
+                    //利用公式计算灰度值
+                    int gray = (int)(color.R * 0.3 + color.G * 0.59 + color.B * 0.11);
+                    Color newColor = Color.FromArgb(gray, gray, gray);
+                    bmp.SetPixel(i, j, newColor);
+                }
             }
 
-            var sat = (max == 0) ? 0.0 : (1.0 - ((double)min / (double)max));
-            var bri = max;
-            return new HSV(hue, sat, bri);
+            return bmp;
         }
 
-    }
-
-
-    public struct HSV
-    {
-        public HSV(double hue, double sat, double bri)
+        public static unsafe Bitmap ConvertTo8BitBitmap(Bitmap img, string destFile)
         {
-            this.H = hue;
-            this.S = sat;
-            this.V = bri;
+            var bit = new Bitmap(img.Width, img.Height, PixelFormat.Format8bppIndexed);
+            BitmapData data = img.LockBits(new Rectangle(0, 0, img.Width, img.Height), ImageLockMode.ReadOnly,
+                                           PixelFormat.Format24bppRgb);
+            var bp = (byte*)data.Scan0.ToPointer();
+            BitmapData data2 = bit.LockBits(new Rectangle(0, 0, bit.Width, bit.Height), ImageLockMode.ReadWrite,
+                                            PixelFormat.Format8bppIndexed);
+            var bp2 = (byte*)data2.Scan0.ToPointer();
+            for (int i = 0; i != data.Height; i++)
+            {
+                for (int j = 0; j != data.Width; j++)
+                {
+                    //0.3R+0.59G+0.11B
+                    float value = 0.11F * bp[i * data.Stride + j * 3] + 0.59F * bp[i * data.Stride + j * 3 + 1] +
+                                  0.3F * bp[i * data.Stride + j * 3 + 2];
+                    bp2[i * data2.Stride + j] = (byte)value;
+                }
+            }
+            img.UnlockBits(data);
+            bit.UnlockBits(data2);
+
+            ColorPalette palette = bit.Palette;
+            for (int i = 0; i != palette.Entries.Length; i++)
+            {
+                palette.Entries[i] = Color.FromArgb(i, i, i);
+            }
+
+            bit.Palette = palette;
+
+            img = new Bitmap(bit);
+            bit.Dispose();
+            return img;
         }
 
-        public double H { get; set; }
+        public static unsafe Bitmap ConvertTo1Bpp3(Bitmap bmp)
+        {
+            var bit = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format8bppIndexed);
+            var data = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            var bp = (byte*)data.Scan0.ToPointer();
 
-        public double S { get; set; }
+            int average = 0;
+            for (int i = 0; i != data.Height; i++)
+            {
+                for (int j = 0; j != data.Width; j++)
+                {
+                    average += bp[i * data.Stride + j * 3];
+                }
+            }
 
-        public double V { get; set; }
-    }
+            average = (int)average / (bmp.Width * bmp.Height);
 
-    public struct RGB
-    {
-        public short R { get; set; }
+            var data2 = bit.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+            var bp2 = (byte*)data.Scan0.ToPointer();
 
-        public short G { get; set; }
+            for (int i = 0; i < bmp.Width; i++)
+            {
+                for (int j = 0; j < bmp.Height; j++)
+                {
+                    //获取该点的像素的RGB的颜色                
+                    var b = bp[i * data.Stride + j * 3];
+                    int value = 255 - b;
+                    if (value > average)
+                    {
+                    }
+                    var newColor = value > average ? 0 : 255;
+                    bp2[i * data2.Stride + j] = (byte)(newColor * 3);
+                    //SetPixel(i, j, new IntPtr(bp2), data2, Color.FromArgb(newColor, newColor, newColor));
+                }
+            }
+            bmp.UnlockBits(data);
+            bit.UnlockBits(data2);
 
-        public short B { get; set; }
+            ColorPalette palette = bit.Palette;
+            for (int i = 0; i != palette.Entries.Length; i++)
+            {
+                palette.Entries[i] = Color.FromArgb(i, i, i);
+            }
+
+            bit.Palette = palette;
+            bmp = new Bitmap(bit);
+            //bit.Dispose();
+
+            bit.Save(@"G:\其他项目\YuZe.ColoredPencil\YuZe.ColoredPencil\new\6.jpeg", ImageFormat.Jpeg);
+            return bmp;
+        }
+
+        public static void SetPixel(int x, int y, IntPtr Iptr, BitmapData bitmapData, Color c)
+        {
+            var Depth = 8;
+            unsafe
+            {
+                byte* ptr = (byte*)Iptr;
+                ptr = ptr + bitmapData.Stride * y;
+                ptr += Depth * x / 8;
+                if (Depth == 32)
+                {
+                    ptr[3] = c.A;
+                    ptr[2] = c.R;
+                    ptr[1] = c.G;
+                    ptr[0] = c.B;
+                }
+                else if (Depth == 24)
+                {
+                    ptr[2] = c.R;
+                    ptr[1] = c.G;
+                    ptr[0] = c.B;
+                }
+                else if (Depth == 8)
+                {
+                    ptr[2] = c.R;
+                    ptr[1] = c.G;
+                    ptr[0] = c.B;
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// 图像灰度反转
+        /// </summary>
+        /// <param name="bmp"></param>
+        /// <returns></returns>
+        public static Bitmap GrayReverse(Bitmap bmp)
+        {
+            for (int i = 0; i < bmp.Width; i++)
+            {
+                for (int j = 0; j < bmp.Height; j++)
+                {
+                    //获取该点的像素的RGB的颜色
+                    Color color = bmp.GetPixel(i, j);
+                    Color newColor = Color.FromArgb(255 - color.R, 255 - color.G, 255 - color.B);
+                    bmp.SetPixel(i, j, newColor);
+                }
+            }
+            return bmp;
+        }
+
+        /// <summary>
+        /// 图像二值化1：取图片的平均灰度作为阈值，低于该值的全都为0，高于该值的全都为255
+        /// </summary>
+        /// <param name="bmp"></param>
+        /// <returns></returns>
+        public static Bitmap ConvertTo1Bpp1(Bitmap bmp)
+        {
+            int average = 0;
+            for (int i = 0; i < bmp.Width; i++)
+            {
+                for (int j = 0; j < bmp.Height; j++)
+                {
+                    Color color = bmp.GetPixel(i, j);
+                    average += color.B;
+
+                }
+            }
+            average = (int)average / (bmp.Width * bmp.Height);
+
+            for (int i = 0; i < bmp.Width; i++)
+            {
+                for (int j = 0; j < bmp.Height; j++)
+                {
+                    //获取该点的像素的RGB的颜色
+                    Color color = bmp.GetPixel(i, j);
+                    int value = 255 - color.B;
+                    Color newColor = value > average ? Color.FromArgb(0, 0, 0) : Color.FromArgb(255, 255, 255);
+                    bmp.SetPixel(i, j, newColor);
+                }
+            }
+            return bmp;
+        }
+
+        /// <summary>
+        /// 图像二值化2
+        /// </summary>
+        /// <param name="img"></param>
+        /// <returns></returns>
+        public static Bitmap ConvertTo1Bpp2(Bitmap img)
+        {
+            int w = img.Width;
+            int h = img.Height;
+            Bitmap bmp = new Bitmap(w, h, PixelFormat.Format1bppIndexed);
+            BitmapData data = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadWrite, PixelFormat.Format1bppIndexed);
+            for (int y = 0; y < h; y++)
+            {
+                byte[] scan = new byte[(w + 7) / 8];
+                for (int x = 0; x < w; x++)
+                {
+                    Color c = img.GetPixel(x, y);
+                    if (c.GetBrightness() >= 0.5) scan[x / 8] |= (byte)(0x80 >> (x % 8));
+                }
+                Marshal.Copy(scan, 0, (IntPtr)((int)data.Scan0 + data.Stride * y), scan.Length);
+            }
+            return bmp;
+        }
+
     }
 }
+public static class ColorExtension
+{
+    public static HSV RGB2HSV(this Color color)
+    {
+        return RGB2HSV(color.R, color.G, color.B);
+    }
+    /// RGB转换HSV
+    private static HSV RGB2HSV(int red, int green, int blue)
+    {
+        double r = ((double)red / 255.0);
+        double g = ((double)green / 255.0);
+        double b = ((double)blue / 255.0);
+
+        double max = Math.Max(r, Math.Max(g, b));
+        double min = Math.Min(r, Math.Min(g, b));
+
+        var hue = 0.0;
+        if (max == r && g >= b)
+        {
+            if (max - min == 0) hue = 0.0;
+            else hue = 60 * (g - b) / (max - min);
+        }
+        else if (max == r && g < b)
+        {
+            hue = 60 * (g - b) / (max - min) + 360;
+        }
+        else if (max == g)
+        {
+            hue = 60 * (b - r) / (max - min) + 120;
+        }
+        else if (max == b)
+        {
+            hue = 60 * (r - g) / (max - min) + 240;
+        }
+
+        var sat = (max == 0) ? 0.0 : (1.0 - ((double)min / (double)max));
+        var bri = max;
+        return new HSV(hue, sat, bri);
+    }
+
+}
+
+
+public struct HSV
+{
+    public HSV(double hue, double sat, double bri)
+    {
+        this.H = hue;
+        this.S = sat;
+        this.V = bri;
+    }
+
+    public double H { get; set; }
+
+    public double S { get; set; }
+
+    public double V { get; set; }
+}
+
+public struct RGB
+{
+    public short R { get; set; }
+
+    public short G { get; set; }
+
+    public short B { get; set; }
+}
+
