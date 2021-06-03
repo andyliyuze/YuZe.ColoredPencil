@@ -9,18 +9,22 @@
     <Compile Remove="spilt3\**" />
     <Compile Remove="spilt4\**" />
     <Compile Remove="spilt\**" />
+    <Compile Remove="spilt_2\**" />
     <Content Remove="spilt2\**" />
     <Content Remove="spilt3\**" />
     <Content Remove="spilt4\**" />
     <Content Remove="spilt\**" />
+    <Content Remove="spilt_2\**" />
     <EmbeddedResource Remove="spilt2\**" />
     <EmbeddedResource Remove="spilt3\**" />
     <EmbeddedResource Remove="spilt4\**" />
     <EmbeddedResource Remove="spilt\**" />
+    <EmbeddedResource Remove="spilt_2\**" />
     <None Remove="spilt2\**" />
     <None Remove="spilt3\**" />
     <None Remove="spilt4\**" />
     <None Remove="spilt\**" />
+    <None Remove="spilt_2\**" />
   </ItemGroup>
 
   <ItemGroup>
